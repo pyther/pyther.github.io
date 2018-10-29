@@ -21,7 +21,7 @@ After some packet captures and testing, I determined the following:
 
 *Note: For ATT Fiber, 802.1x Authentication is required between the residential
 gateway and the modem (ONT). 802.1x Authentication is not used for Fixed
-Wireless Internet. Beaware of this fact, if reading other guides.*
+Wireless Internet. Be aware of this, if reading other guides.*
 <!--more-->
 
 ## Traffic Capture
@@ -39,7 +39,7 @@ Make the following connections:
   - Residential Gateway Modem port -> Linux Router (enp1s0)
   - Modem/Antenna -> Linux Router (enp2s0)
 
-Bring Up Interfaces: 
+Bring up interfaces:
 {% highlight sh %}
 $ ip route link set up dev enp1s0
 $ ip route link set up dev enp2s0
@@ -159,8 +159,8 @@ interface enp2s0.4002
 };
 {% endhighlight %}
 
-As you can see, `AdvAutonomous` is set to `off`. Which means the address can
-not be used for autonomous address configuration. 
+As you can see in the prefix section, `AdvAutonomous` is set to `off`. This
+means the address can not be used for autonomous address configuration.
 
 When the modem/antenna is powered cycle, a new IPv6 prefix is issued. As I want
 my internal networks to have a consistent IPv6 address, I've decided to assign
@@ -176,11 +176,11 @@ Note: The prerouting rule is only included for completeness. It never gets hit,
 because ATT NATs all outgoing connections and does not allow new incoming
 connections.
 
-I wrote small bash script that will request and wait for a Router Advertisement
+I wrote a small bash script that will request and wait for a Router Advertisement
 using the ndp binary ([mdlayher/ndp][ndp-go]) and update ip6tables accordingly.
 I run the script every 5 minutes via cron. Not the best solution, but works
 reasonably well. Ideally it'd be nice to have daemon that listens for RAs and
-takes action when there is a change.
+takes action when there is a change. Here's the script:
 
 {% highlight sh %}
 # Send a router solicitation to get network address
