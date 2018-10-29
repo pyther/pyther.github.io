@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>ATT Fixed Wireless Gateway Bypass | Matthew Gyurgyik</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="ATT Fixed Wireless Gateway Bypass" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Overview" />
+<meta property="og:description" content="Overview" />
+<link rel="canonical" href="http://localhost:4000/fixed/wireless/internet/2018/10/28/att-fixed-wireless-gateway-bypass.html" />
+<meta property="og:url" content="http://localhost:4000/fixed/wireless/internet/2018/10/28/att-fixed-wireless-gateway-bypass.html" />
+<meta property="og:site_name" content="Matthew Gyurgyik" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-10-28T20:00:00-04:00" />
+<script type="application/ld+json">
+{"@type":"BlogPosting","headline":"ATT Fixed Wireless Gateway Bypass","dateModified":"2018-10-28T20:00:00-04:00","datePublished":"2018-10-28T20:00:00-04:00","url":"http://localhost:4000/fixed/wireless/internet/2018/10/28/att-fixed-wireless-gateway-bypass.html","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/fixed/wireless/internet/2018/10/28/att-fixed-wireless-gateway-bypass.html"},"description":"Overview","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=HEAD">
+    <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="http://localhost:4000/">Matthew Gyurgyik</a></h1>
+        
+        
+
+        <p>HPC Linux System Engineer</p>
+
+        
+        <p class="view"><a href="http://github.com/pyther/pyther.github.io">View the Project on GitHub <small>pyther/pyther.github.io</small></a></p>
+        
+
+        
+
+        
+      </header>
+      <section>
+
+      <small>28 October 2018</small>
+<h1>ATT Fixed Wireless Gateway Bypass</h1>
+
+<p class="view">by </p>
+
+<h2 id="overview">Overview</h2>
+
+<p><a href="https://www.att.com/internet/fixed-wireless.html">ATT Fixed Wireless Internet</a> service consists of an Outdoor Antenna
+with a built-in modem and an ATT Residential Gateway. A Power-over-Ethernet
+injector is used to power the Antenna/Modem.</p>
+
+<p>A handful of ATT Fiber customers figured out how to bypass the residential
+gateway. Since the same gateways are used for Fixed Wireless Internet, I wonder
+if it was possible to do the same.</p>
+
+<p>After some packet captures and testing, I determined the following:</p>
+
+<ol>
+  <li>Nearly all traffic was tagged for vlan 4001 or vlan 4002</li>
+  <li>The MAC Address of the Linux router needs to the same as the Residential Gateway (or the modem won’t respond)</li>
+  <li>DHCP on VLAN 4001 gave a 192.168.11.x address</li>
+  <li>DHCP on VLAN 4002 gave an “Internet” address of 10.x.x.x address (Carrier Grade NAT)</li>
+</ol>
+
+<p><em>Note: For ATT Fiber, 802.1x Authentication is required between the residential
+gateway and the modem (ONT). 802.1x Authentication is not used for Fixed
+Wireless Internet. Beaware of this fact, if reading other guides.</em></p>
+
+<h2 id="traffic-capture">Traffic Capture</h2>
+
+<p><em>Optional: I only have a sample size of one device, however I imagine all Fixed
+Wireless Modems/Antennas are configured the same. If the mac address is printed
+on your residential gateway, you can probably skip this step.</em></p>
+
+<p>We need to analyze the traffic between the residential gateway and the
+modem/antenna to determine which vlans are being used. We can do this by
+creating a bridge and using tcpdump to look at the traffic flowing between the
+gateway and modem/antenna.</p>
+
+<p>Make the following connections:</p>
+<ul>
+  <li>Residential Gateway Modem port -&gt; Linux Router (enp1s0)</li>
+  <li>Modem/Antenna -&gt; Linux Router (enp2s0)</li>
+</ul>
+
+<p>Bring Up Interfaces:</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="nv">$ </span>ip route link <span class="nb">set </span>up dev enp1s0
+<span class="nv">$ </span>ip route link <span class="nb">set </span>up dev enp2s0</code></pre></figure>
+
+<p>Create the bridge:</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="nv">$ </span>brctl addbr br-att
+<span class="nv">$ </span>brctl addif br-att enp1s0
+<span class="nv">$ </span>brctl addif br-att enp2s0</code></pre></figure>
+
+<p>Analyze the traffic:</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="nv">$ </span>tcpdump <span class="nt">-vvv</span> <span class="nt">-ei</span> br-att</code></pre></figure>
+
+<p>From the dump, you should be able to identify the <strong>vlans</strong> being used the
+<strong>mac address</strong> of the residential gateway. You may find the mac address
+printed on the side of the residental gateway.</p>
+
+<p>Tear down the bridge:</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="nv">$ </span>brctl del br-att enp1s0
+<span class="nv">$ </span>brctl del br-att enp2s0
+<span class="nv">$ </span>brctl delbr br-att</code></pre></figure>
+
+<p>Disconnect the residental gateway from the Linux router.</p>
+
+<h2 id="configuration">Configuration</h2>
+
+<p>The following configuration uses use the <code class="highlighter-rouge">ip</code> command. Although this example is
+Linux specific, the concepts should work on any platform.</p>
+
+<p>The modem/antenna should be directly connected to your Linux router. The
+residential gateway should be disconnected and powered off.</p>
+
+<p>Bring up the WAN interface:</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="nv">$ </span>ip route link <span class="nb">set </span>up dev enp2s0</code></pre></figure>
+
+<p>Create a tagged interface:</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="nv">$ </span>ip link add link enp2s0 name enp2s0.4002 <span class="nb">type </span>vlan id 4002</code></pre></figure>
+
+<p>Spoof the mac address on the tagged interface:</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="nv">$ </span>macchanger <span class="nt">--mac</span><span class="o">=</span>XX:XX:XX:XX:XX:XX enp2s0.4002</code></pre></figure>
+
+<p>Replace <code class="highlighter-rouge">XX:XX:XX:XX:XX:XX</code> with the mac address of the residental gateway as identified above.</p>
+
+<p>At this point, the connection should be useable and we can attempt to obtain an IPv4 address.</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="nv">$ </span>dhclient <span class="nt">-4</span> <span class="nt">-d</span> enp2s0.4002</code></pre></figure>
+
+<p>If you get a lease for <code class="highlighter-rouge">192.168.11.x</code>, tear down the tagged interface, and
+repeat the steps for any other identified vlans.</p>
+
+<p>If you fail to get a lease, verify the mac address on the tagged interface
+(enp2s0.4002). The modem/antenna will not respond to traffic from any other mac
+address.</p>
+
+<h2 id="ipv6-configuration">IPv6 Configuration</h2>
+
+<p>In my testing, the antenna/modem won’t respond to DHCPv6 requests. The same was
+true of the residential gateway. This means requests prefix delegations is out
+of the question and we are left using the Router Advertisement (RA) for IPv6
+configuration.</p>
+
+<p>If you configure your Linux router to accept router advertisements, you’ll
+notice that an IPv6 address won’t get configured, but a default route will.</p>
+
+<p>Router Advertisement</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">interface enp2s0.4002
+{
+	AdvSendAdvert on;
+	# Note: {Min,Max}RtrAdvInterval cannot be obtained with radvdump
+	AdvManagedFlag off;
+	AdvOtherConfigFlag off;
+	AdvReachableTime 0;
+	AdvRetransTimer 0;
+	AdvCurHopLimit 64;
+	AdvDefaultLifetime 1800;
+	AdvHomeAgentFlag off;
+	AdvDefaultPreference medium;
+	AdvLinkMTU 1430;
+	AdvSourceLLAddress on;
+
+	prefix 2600:380:a826:8893::/64
+	{
+		AdvValidLifetime 86400;
+		AdvPreferredLifetime 14400;
+		AdvOnLink off;
+		AdvAutonomous off;
+		AdvRouterAddr off;
+	}; # End of prefix definition
+
+
+	route 2600:380:a826:8893:35f8:c0d6:8bcb:71e4/128
+	{
+		AdvRoutePreference medium;
+		AdvRouteLifetime 86400;
+	}; # End of route definition
+
+
+	RDNSS 2600:300:20b0:341a::13 2600:300:20b0:341a::14
+	{
+		AdvRDNSSLifetime 600;
+	}; # End of RDNSS definition
+
+};</code></pre></figure>
+
+<p>As you can see, <code class="highlighter-rouge">AdvAutonomous</code> is set to <code class="highlighter-rouge">off</code>. Which means the address can
+not be used for autonomous address configuration.</p>
+
+<p>When the modem/antenna is powered cycle, a new IPv6 prefix is issued. As I want
+my internal networks to have a consistent IPv6 address, I’ve decided to assign
+Unique Link-Local Addresses (ULA) to my internal networks. Using the NETMAP
+extension, I can map my ULAs to the IPv6 prefix assigned by ATT.</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="nv">$ </span>ip6tables <span class="nt">-t</span> nat <span class="nt">-A</span> PREROUTING <span class="nt">-d</span> 2600:380:7e1b:d87e::/64 <span class="nt">-i</span> enp2s0.4002 <span class="nt">-j</span> NETMAP <span class="nt">--to</span> fd4a:d2f6:a2d6::/48
+<span class="nv">$ </span>ip6tables <span class="nt">-t</span> nat <span class="nt">-A</span> POSTROUTING <span class="nt">-s</span> fd4a:d2f6:a2d6::/48 <span class="nt">-o</span> enp2s0.4002 <span class="nt">-j</span> NETMAP <span class="nt">--to</span> 2600:380:7e1b:d87e::/64</code></pre></figure>
+
+<p>Note: The prerouting rule is only included for completeness. It never gets hit,
+because ATT NATs all outgoing connections and does not allow new incoming
+connections.</p>
+
+<p>I wrote small bash script that will request and wait for a Router Advertisement
+using the ndp binary (<a href="https://github.com/mdlayher/ndp">mdlayher/ndp</a>) and update ip6tables accordingly.
+I run the script every 5 minutes via cron. Not the best solution, but works
+reasonably well. Ideally it’d be nice to have daemon that listens for RAs and
+takes action when there is a change.</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="c"># Send a router solicitation to get network address</span>
+<span class="c"># ATT Modem is stupid and sets AdvAutonomous off</span>
+<span class="c"># which prevets networkd and friends from assinging an ip address to the interface</span>
+
+<span class="nv">INT</span><span class="o">=</span>enp2s0.4002
+
+<span class="k">if</span> <span class="o">!</span> networkctl status <span class="nv">$INT</span> | <span class="nb">grep</span> <span class="nt">-q</span> <span class="s1">'State: routable'</span><span class="p">;</span> <span class="k">then
+    </span><span class="nb">echo</span> <span class="s2">"Interface is not in a routable state."</span>
+    <span class="nb">exit </span>1
+<span class="k">fi
+
+</span><span class="nv">addr</span><span class="o">=</span><span class="k">$(</span>timeout 10 /opt/bin/ndp <span class="nt">-i</span> <span class="nv">$INT</span> <span class="nt">-a</span> linklocal rs 2&gt;&amp;1 | <span class="nb">grep</span> <span class="s1">'prefix information:'</span> | sed <span class="s1">'s/[^0-9]*//'</span> | cut <span class="nt">-d</span><span class="s1">','</span> <span class="nt">-f1</span><span class="k">)</span>
+<span class="nv">rc</span><span class="o">=</span><span class="nv">$?</span>
+
+<span class="k">if</span> <span class="o">((</span> rc <span class="o">))</span><span class="p">;</span> <span class="k">then
+    </span><span class="nb">echo</span> <span class="s2">"ndp command exit status was </span><span class="k">${</span><span class="nv">rc</span><span class="k">}</span><span class="s2">."</span>
+    <span class="nb">exit </span>1
+<span class="k">fi
+
+if</span> <span class="o">[[</span> <span class="nt">-z</span> <span class="nv">$addr</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then
+    </span><span class="nb">echo</span> <span class="s2">"unable to parse address from ndp command output"</span>
+    <span class="nb">exit </span>1
+<span class="k">fi
+
+if</span> <span class="o">!</span> ip6tables-save <span class="nt">-t</span> nat | <span class="nb">grep</span> <span class="s2">"</span><span class="se">\-</span><span class="s2">A POSTROUTING"</span> | <span class="nb">grep</span> <span class="nt">-q</span> <span class="s2">"</span><span class="nv">$addr</span><span class="s2">"</span><span class="p">;</span> <span class="k">then
+    </span>ip6tables <span class="nt">-t</span> nat <span class="nt">-F</span> POSTROUTING <span class="o">||</span> <span class="nb">exit </span>1
+    ip6tables <span class="nt">-t</span> nat <span class="nt">-F</span> PREROUTING <span class="o">||</span> <span class="nb">exit </span>1 
+    ip6tables <span class="nt">-t</span> nat <span class="nt">-A</span> PREROUTING <span class="nt">-i</span> <span class="nv">$INT</span> <span class="nt">-j</span> NETMAP <span class="nt">-d</span> <span class="nv">$addr</span> <span class="nt">--to</span> fd4a:d2f6:a2d6::/48 <span class="o">||</span> <span class="nb">exit </span>1
+    ip6tables <span class="nt">-t</span> nat <span class="nt">-A</span> POSTROUTING <span class="nt">-o</span> <span class="nv">$INT</span> <span class="nt">-j</span> NETMAP <span class="nt">--to</span> <span class="nv">$addr</span> <span class="nt">-s</span> fd4a:d2f6:a2d6::/48 <span class="o">||</span> <span class="nb">exit </span>1
+    <span class="nb">echo</span> <span class="s2">"IPv6 NAT rules updated: </span><span class="k">${</span><span class="nv">addr</span><span class="k">}</span><span class="s2">"</span>
+<span class="k">fi</span></code></pre></figure>
+
+
+
+
+  <small>tags: <em></em></small>
+
+
+
+      </section>
+      <footer>
+        
+        <p>This project is maintained by <a href="http://github.com/pyther">pyther</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+    
+  </body>
+</html>

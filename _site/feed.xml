@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2018-10-28T21:53:40-04:00</updated><id>http://localhost:4000/</id><title type="html">Matthew Gyurgyik</title><subtitle>HPC Linux System Engineer</subtitle><entry><title type="html">ATT Fixed Wireless Gateway Bypass</title><link href="http://localhost:4000/fixed/wireless/internet/2018/10/28/att-fixed-wireless-gateway-bypass.html" rel="alternate" type="text/html" title="ATT Fixed Wireless Gateway Bypass" /><published>2018-10-28T20:00:00-04:00</published><updated>2018-10-28T20:00:00-04:00</updated><id>http://localhost:4000/fixed/wireless/internet/2018/10/28/att-fixed-wireless-gateway-bypass</id><content type="html" xml:base="http://localhost:4000/fixed/wireless/internet/2018/10/28/att-fixed-wireless-gateway-bypass.html">&lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://www.att.com/internet/fixed-wireless.html&quot;&gt;ATT Fixed Wireless Internet&lt;/a&gt; service consists of an Outdoor Antenna
+with a built-in modem and an ATT Residential Gateway. A Power-over-Ethernet
+injector is used to power the Antenna/Modem.&lt;/p&gt;
+
+&lt;p&gt;A handful of ATT Fiber customers figured out how to bypass the residential
+gateway. Since the same gateways are used for Fixed Wireless Internet, I wonder
+if it was possible to do the same.&lt;/p&gt;
+
+&lt;p&gt;After some packet captures and testing, I determined the following:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Nearly all traffic was tagged for vlan 4001 or vlan 4002&lt;/li&gt;
+  &lt;li&gt;The MAC Address of the Linux router needs to the same as the Residential Gateway (or the modem won’t respond)&lt;/li&gt;
+  &lt;li&gt;DHCP on VLAN 4001 gave a 192.168.11.x address&lt;/li&gt;
+  &lt;li&gt;DHCP on VLAN 4002 gave an “Internet” address of 10.x.x.x address (Carrier Grade NAT)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;em&gt;Note: For ATT Fiber, 802.1x Authentication is required between the residential
+gateway and the modem (ONT). 802.1x Authentication is not used for Fixed
+Wireless Internet. Beaware of this fact, if reading other guides.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;traffic-capture&quot;&gt;Traffic Capture&lt;/h2&gt;
+
+&lt;p&gt;&lt;em&gt;Optional: I only have a sample size of one device, however I imagine all Fixed
+Wireless Modems/Antennas are configured the same. If the mac address is printed
+on your residential gateway, you can probably skip this step.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;We need to analyze the traffic between the residential gateway and the
+modem/antenna to determine which vlans are being used. We can do this by
+creating a bridge and using tcpdump to look at the traffic flowing between the
+gateway and modem/antenna.&lt;/p&gt;
+
+&lt;p&gt;Make the following connections:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Residential Gateway Modem port -&amp;gt; Linux Router (enp1s0)&lt;/li&gt;
+  &lt;li&gt;Modem/Antenna -&amp;gt; Linux Router (enp2s0)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Bring Up Interfaces:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ip route link &lt;span class=&quot;nb&quot;&gt;set &lt;/span&gt;up dev enp1s0
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ip route link &lt;span class=&quot;nb&quot;&gt;set &lt;/span&gt;up dev enp2s0&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Create the bridge:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;brctl addbr br-att
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;brctl addif br-att enp1s0
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;brctl addif br-att enp2s0&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Analyze the traffic:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;tcpdump &lt;span class=&quot;nt&quot;&gt;-vvv&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-ei&lt;/span&gt; br-att&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;From the dump, you should be able to identify the &lt;strong&gt;vlans&lt;/strong&gt; being used the
+&lt;strong&gt;mac address&lt;/strong&gt; of the residential gateway. You may find the mac address
+printed on the side of the residental gateway.&lt;/p&gt;
+
+&lt;p&gt;Tear down the bridge:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;brctl del br-att enp1s0
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;brctl del br-att enp2s0
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;brctl delbr br-att&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Disconnect the residental gateway from the Linux router.&lt;/p&gt;
+
+&lt;h2 id=&quot;configuration&quot;&gt;Configuration&lt;/h2&gt;
+
+&lt;p&gt;The following configuration uses use the &lt;code class=&quot;highlighter-rouge&quot;&gt;ip&lt;/code&gt; command. Although this example is
+Linux specific, the concepts should work on any platform.&lt;/p&gt;
+
+&lt;p&gt;The modem/antenna should be directly connected to your Linux router. The
+residential gateway should be disconnected and powered off.&lt;/p&gt;
+
+&lt;p&gt;Bring up the WAN interface:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ip route link &lt;span class=&quot;nb&quot;&gt;set &lt;/span&gt;up dev enp2s0&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Create a tagged interface:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ip link add link enp2s0 name enp2s0.4002 &lt;span class=&quot;nb&quot;&gt;type &lt;/span&gt;vlan id 4002&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Spoof the mac address on the tagged interface:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;macchanger &lt;span class=&quot;nt&quot;&gt;--mac&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;XX:XX:XX:XX:XX:XX enp2s0.4002&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Replace &lt;code class=&quot;highlighter-rouge&quot;&gt;XX:XX:XX:XX:XX:XX&lt;/code&gt; with the mac address of the residental gateway as identified above.&lt;/p&gt;
+
+&lt;p&gt;At this point, the connection should be useable and we can attempt to obtain an IPv4 address.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;dhclient &lt;span class=&quot;nt&quot;&gt;-4&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; enp2s0.4002&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;If you get a lease for &lt;code class=&quot;highlighter-rouge&quot;&gt;192.168.11.x&lt;/code&gt;, tear down the tagged interface, and
+repeat the steps for any other identified vlans.&lt;/p&gt;
+
+&lt;p&gt;If you fail to get a lease, verify the mac address on the tagged interface
+(enp2s0.4002). The modem/antenna will not respond to traffic from any other mac
+address.&lt;/p&gt;
+
+&lt;h2 id=&quot;ipv6-configuration&quot;&gt;IPv6 Configuration&lt;/h2&gt;
+
+&lt;p&gt;In my testing, the antenna/modem won’t respond to DHCPv6 requests. The same was
+true of the residential gateway. This means requests prefix delegations is out
+of the question and we are left using the Router Advertisement (RA) for IPv6
+configuration.&lt;/p&gt;
+
+&lt;p&gt;If you configure your Linux router to accept router advertisements, you’ll
+notice that an IPv6 address won’t get configured, but a default route will.&lt;/p&gt;
+
+&lt;p&gt;Router Advertisement&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;interface enp2s0.4002
+{
+	AdvSendAdvert on;
+	# Note: {Min,Max}RtrAdvInterval cannot be obtained with radvdump
+	AdvManagedFlag off;
+	AdvOtherConfigFlag off;
+	AdvReachableTime 0;
+	AdvRetransTimer 0;
+	AdvCurHopLimit 64;
+	AdvDefaultLifetime 1800;
+	AdvHomeAgentFlag off;
+	AdvDefaultPreference medium;
+	AdvLinkMTU 1430;
+	AdvSourceLLAddress on;
+
+	prefix 2600:380:a826:8893::/64
+	{
+		AdvValidLifetime 86400;
+		AdvPreferredLifetime 14400;
+		AdvOnLink off;
+		AdvAutonomous off;
+		AdvRouterAddr off;
+	}; # End of prefix definition
+
+
+	route 2600:380:a826:8893:35f8:c0d6:8bcb:71e4/128
+	{
+		AdvRoutePreference medium;
+		AdvRouteLifetime 86400;
+	}; # End of route definition
+
+
+	RDNSS 2600:300:20b0:341a::13 2600:300:20b0:341a::14
+	{
+		AdvRDNSSLifetime 600;
+	}; # End of RDNSS definition
+
+};&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;As you can see, &lt;code class=&quot;highlighter-rouge&quot;&gt;AdvAutonomous&lt;/code&gt; is set to &lt;code class=&quot;highlighter-rouge&quot;&gt;off&lt;/code&gt;. Which means the address can
+not be used for autonomous address configuration.&lt;/p&gt;
+
+&lt;p&gt;When the modem/antenna is powered cycle, a new IPv6 prefix is issued. As I want
+my internal networks to have a consistent IPv6 address, I’ve decided to assign
+Unique Link-Local Addresses (ULA) to my internal networks. Using the NETMAP
+extension, I can map my ULAs to the IPv6 prefix assigned by ATT.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ip6tables &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; nat &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; PREROUTING &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; 2600:380:7e1b:d87e::/64 &lt;span class=&quot;nt&quot;&gt;-i&lt;/span&gt; enp2s0.4002 &lt;span class=&quot;nt&quot;&gt;-j&lt;/span&gt; NETMAP &lt;span class=&quot;nt&quot;&gt;--to&lt;/span&gt; fd4a:d2f6:a2d6::/48
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ip6tables &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; nat &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; POSTROUTING &lt;span class=&quot;nt&quot;&gt;-s&lt;/span&gt; fd4a:d2f6:a2d6::/48 &lt;span class=&quot;nt&quot;&gt;-o&lt;/span&gt; enp2s0.4002 &lt;span class=&quot;nt&quot;&gt;-j&lt;/span&gt; NETMAP &lt;span class=&quot;nt&quot;&gt;--to&lt;/span&gt; 2600:380:7e1b:d87e::/64&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Note: The prerouting rule is only included for completeness. It never gets hit,
+because ATT NATs all outgoing connections and does not allow new incoming
+connections.&lt;/p&gt;
+
+&lt;p&gt;I wrote small bash script that will request and wait for a Router Advertisement
+using the ndp binary (&lt;a href=&quot;https://github.com/mdlayher/ndp&quot;&gt;mdlayher/ndp&lt;/a&gt;) and update ip6tables accordingly.
+I run the script every 5 minutes via cron. Not the best solution, but works
+reasonably well. Ideally it’d be nice to have daemon that listens for RAs and
+takes action when there is a change.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;&lt;span class=&quot;c&quot;&gt;# Send a router solicitation to get network address&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# ATT Modem is stupid and sets AdvAutonomous off&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# which prevets networkd and friends from assinging an ip address to the interface&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;INT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;enp2s0.4002
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt; networkctl status &lt;span class=&quot;nv&quot;&gt;$INT&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-q&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'State: routable'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;then
+    &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Interface is not in a routable state.&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;exit &lt;/span&gt;1
+&lt;span class=&quot;k&quot;&gt;fi
+
+&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;addr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$(&lt;/span&gt;timeout 10 /opt/bin/ndp &lt;span class=&quot;nt&quot;&gt;-i&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$INT&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt; linklocal rs 2&amp;gt;&amp;amp;1 | &lt;span class=&quot;nb&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'prefix information:'&lt;/span&gt; | sed &lt;span class=&quot;s1&quot;&gt;'s/[^0-9]*//'&lt;/span&gt; | cut &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;','&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-f1&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;rc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$?&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;((&lt;/span&gt; rc &lt;span class=&quot;o&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;then
+    &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;ndp command exit status was &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;rc&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;.&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;exit &lt;/span&gt;1
+&lt;span class=&quot;k&quot;&gt;fi
+
+if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[[&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-z&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$addr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;]]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;then
+    &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;unable to parse address from ndp command output&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;exit &lt;/span&gt;1
+&lt;span class=&quot;k&quot;&gt;fi
+
+if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt; ip6tables-save &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; nat | &lt;span class=&quot;nb&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\-&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;A POSTROUTING&quot;&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-q&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$addr&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;then
+    &lt;/span&gt;ip6tables &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; nat &lt;span class=&quot;nt&quot;&gt;-F&lt;/span&gt; POSTROUTING &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;exit &lt;/span&gt;1
+    ip6tables &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; nat &lt;span class=&quot;nt&quot;&gt;-F&lt;/span&gt; PREROUTING &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;exit &lt;/span&gt;1 
+    ip6tables &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; nat &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; PREROUTING &lt;span class=&quot;nt&quot;&gt;-i&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$INT&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-j&lt;/span&gt; NETMAP &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$addr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--to&lt;/span&gt; fd4a:d2f6:a2d6::/48 &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;exit &lt;/span&gt;1
+    ip6tables &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; nat &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; POSTROUTING &lt;span class=&quot;nt&quot;&gt;-o&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$INT&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-j&lt;/span&gt; NETMAP &lt;span class=&quot;nt&quot;&gt;--to&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$addr&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-s&lt;/span&gt; fd4a:d2f6:a2d6::/48 &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;exit &lt;/span&gt;1
+    &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;IPv6 NAT rules updated: &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;addr&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;fi&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;</content><author><name></name></author><summary type="html">Overview</summary></entry></feed>
