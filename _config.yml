@@ -15,7 +15,7 @@
 # in the templates via {{ site.myvariable }}.
 name: Matthew Gyurgyik
 description: HPC Linux System Engineer
-avatar: https://raw.githubusercontent.com/barryclark/jekyll-now/master/images/jekyll-logo.png
+avatar: https://www.gravatar.com/avatar/21f498f780be397d2e3104179744aa22?s=140
 
 footer-links:
   dribbble:
