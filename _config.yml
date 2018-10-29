@@ -13,14 +13,31 @@
 # you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
-title: Matthew Gyurgyik
-email: matthew@pyther.net
-description: >- # this means to ignore newlines until "baseurl:"
-  HPC Linux System Engineer
+name: Matthew Gyurgyik
+description: HPC Linux System Engineer
+avatar: https://raw.githubusercontent.com/barryclark/jekyll-now/master/images/jekyll-logo.png
+
+footer-links:
+  dribbble:
+  email:
+  facebook:
+  flickr:
+  github: pyther
+  instagram:
+  linkedin: mgyurgyik
+  pinterest:
+  rss: # just type anything here for a working RSS icon
+  twitter:
+  stackoverflow: # your stackoverflow profile, e.g. "users/50476/bart-kiers"
+  youtube: # channel/<your_long_string> or user/<user-name>
+  googleplus: # anything in your profile username that comes after plus.google.com/
+
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
-linkedin_username: mgyurgyik
-github_username:  pyther
+
+# Enter your Disqus shortname (not your username) to enable commenting on posts
+# You can find your shortname on the Settings page of your Disqus account
+disqus:
 
 # Build settings
 markdown: kramdown

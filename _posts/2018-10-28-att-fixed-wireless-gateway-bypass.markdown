@@ -1,11 +1,8 @@
 ---
 layout: post
 title:  "ATT Fixed Wireless Gateway Bypass"
-date:   2018-10-28 20:00:00 -0400
-categories: Fixed Wireless Internet
+excerpt_separator: <!--more-->
 ---
-
-## Overview
 
 [ATT Fixed Wireless Internet][att-fwi] service consists of an Outdoor Antenna
 with a built-in modem and an ATT Residential Gateway. A Power-over-Ethernet
@@ -25,6 +22,7 @@ After some packet captures and testing, I determined the following:
 *Note: For ATT Fiber, 802.1x Authentication is required between the residential
 gateway and the modem (ONT). 802.1x Authentication is not used for Fixed
 Wireless Internet. Beaware of this fact, if reading other guides.*
+<!--more-->
 
 ## Traffic Capture
 
