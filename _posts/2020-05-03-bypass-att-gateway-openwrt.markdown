@@ -1,21 +1,21 @@
 ---
 layout: single
-title:  "Bypass AT&T Fiber Gateway with Openwrt"
+title:  "Bypass AT&T Fiber Gateway with OpenWrt"
 excerpt_separator: <!--more-->
 ---
 
-To enable OpenWRT to send traffic directly to the WAN/ONT
+To enable OpenWrt to send traffic directly to the WAN/ONT
 1. WAN Traffic must be tagged with VLAN 0
 2. WAN Mac Address must match the MAC Address of the AT&T Gateway
 3. IPv6 DUID must be set and match the DUID used by the AT&T Gateway
 4. 802.1X Authentication is required
 
 
-The first three steps are easy, all can be configured with OpenWRT. The last
+The first three steps are easy, all can be configured with OpenWrt. The last
 step, 802.1X Authentication, is where things get a little tricky.
 
 Ideally, we would extract the 802.1X user certificates from the AT&T Router and
-let OpenWRT handle the authentication. Extracting certificates from the AT&T
+let OpenWrt handle the authentication. Extracting certificates from the AT&T
 router is not currently possible. There was a root exploit a while back that
 allowed some folks to extract certificates, but this has since been patched. 
 
@@ -27,7 +27,7 @@ the ONT interfaces, allowing EAP Authentication to take place.
 Take a moment and identify the **Mac Address** and **Serial Number** of the AT&T
 Gateway/Router. This information can be found on the back of the AT&T Router.
 
-Note: These instructions are specific to OpenWRT but should be adaptable to any Linux based OS.
+Note: These instructions are specific to OpenWrt but should be adaptable to any Linux based OS.
 
 ### Physical Connections
 For this setup, you will need a total of 3 NICs. If you lack a third interface,
