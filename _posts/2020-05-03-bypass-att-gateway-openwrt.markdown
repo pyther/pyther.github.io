@@ -4,7 +4,15 @@ title:  "Bypass AT&T Fiber Gateway with OpenWrt"
 excerpt_separator: <!--more-->
 ---
 
-To enable OpenWrt to send traffic directly to the WAN/ONT
+AT&T requires the use of their Residential Gateway to access their network.  If
+you've attempted to connect your own router directly to the ONT
+(Fiber-to-Ethernet adapter), you likely didn't get very far.
+
+Why? Perhaps you want full control of your network. Maybe you are already using
+your own router and want to remove an unnecessary extra hop. Whatever your
+reason, this can be achieved with OpenWrt and an EAP proxy.
+
+In order to route traffic directly to the ONT
 1. WAN Traffic must be tagged with VLAN 0
 2. WAN Mac Address must match the MAC Address of the AT&T Gateway
 3. IPv6 DUID must be set and match the DUID used by the AT&T Gateway
