@@ -18,7 +18,7 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: Matthew Gyurgyik
+title: Byte Shift Insights
 email: matthew@gyurgyik.io
 description: >- # this means to ignore newlines until "baseurl:"
   Site Reliability Engineer, Linux Enthusiast, Network Explorer
@@ -27,8 +27,42 @@ url: "" # the base hostname & protocol for your site, e.g. http://example.com
 #twitter_username: jekyllrb
 github_username:  pyther
 
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      author_profile: true
+      classes: wide
+
+author:
+    name: "Matthew Gyurgyik"
+    avatar: "/assets/images/bio-photo.jpg"
+    bio: Site Reliability Engineer, Linux Enthusiast, Network Explorer, Troublemaker
+    location: "Mountain View, CA"
+    links:
+        - label: "matthew@gyurgyik.io"
+          icon: "far fa-fw fa-envelope"
+          url: "mailto:matthew@gyurgyik.io"
+        - label: "GitHub"
+          icon: "fab fa-fw fa-github"
+          url: "https://github.com/pyther"
+        - label: "LinkedIn"
+          icon: "fab fa-fw fa-linkedin"
+          url: "https://www.linkedin.com/in/mgyurgyik"
+        - label: "Messenger"
+          icon: "fab fa-fw fa-facebook-messenger"
+          url: "https://m.me/mgyurgyik"
+        - label: "Reddit"
+          icon: "fab fa-fw fa-reddit"
+          url: "https://www.reddit.com/user/pyther24/"
+        - label: "Xbox"
+          icon: "fab fa-fw fa-xbox"
+          url: "https://xboxgamertag.com/search/ByteDrifter"
+
 # Build settings
-theme: minima
+#theme: minima
+theme: minimal-mistakes-jekyll
 plugins:
   - jekyll-feed
 
