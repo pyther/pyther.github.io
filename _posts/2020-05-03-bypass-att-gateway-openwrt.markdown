@@ -92,12 +92,12 @@ Since we don't have access to the 802.1X user certificates, we need to proxy
 EAP packets between the AT&T Router and the ONT, so the AT&T Router can
 authenticate on our behalf.
 
-[pyther/goeap_proxy](goeap_proxy) is one of many EAP Proxy tools that can help
+[pyther/goeap_proxy](https://github.com/pyther/goeap_proxy/) is one of many EAP Proxy tools that can help
 us. The proxy listen on both interfaces for EtherType 0x888E (EAP over LAN)
 frames and forwards EAP packets between interfaces.
 
 #### Build
-1. Go to [pyther/openwrt-feed](openwrt-feed)
+1. Go to [pyther/openwrt-feed](https://github.com/pyther/openwrt-feed)
 2. Follow instruction in README to build a package for your platform
 3. Copy package to your device
 
@@ -174,7 +174,3 @@ config globals 'globals'
 	option ula_prefix 'fd10:96f2:a1b1::/48'
 {% endhighlight %}
 
-
-
-[openwrt-feed]: https://github.com/pyther/openwrt-feed
-[goeap-proxy]: https://github.com/pyther/goeap_proxy/
