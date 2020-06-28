@@ -61,7 +61,7 @@ Interestingly, EAP Traffic, is not 802.1Q tagged.
 Important Notes
 - traffic must be tagged with vlan ZERO (ifname ethX.0)
 - macaddr must be set to the mac address on your AT&T Router
-- to use DNS servers provided by ATT set `option perdns '1'`
+- to use DNS servers provided by ATT set `option peerdns '1'`
 
 {% highlight sh %}
 config interface 'wan'
@@ -73,15 +73,20 @@ config interface 'wan'
 	list dns '1.0.0.1' # cloudflare nameserver
 {% endhighlight %}
 
-#### ATT
-Ensure eth2 is brought up on startup. Needed for EAP Proxy, below.
+#### ONT
+Interface for the ONT. This will be used by the EAP proxy.
 {% highlight sh %}
-config interface 'ATT'
+config interface 'ont'
+	option proto 'none'
+	option ifname 'eth1'
+{% endhighlight %}
+
+#### RGW
+Interface for the AT&T Residential Gaetway. This will be used by the EAP proxy.
+{% highlight sh %}
+config interface 'rgw'
 	option proto 'none'
 	option ifname 'eth2'
-	option auto '1'
-	option delegate '0'
-	option force_link '1'
 {% endhighlight %}
 
 #### LAN
@@ -92,9 +97,9 @@ Since we don't have access to the 802.1X user certificates, we need to proxy
 EAP packets between the AT&T Router and the ONT, so the AT&T Router can
 authenticate on our behalf.
 
-[pyther/goeap_proxy](https://github.com/pyther/goeap_proxy/) is one of many EAP Proxy tools that can help
-us. The proxy listen on both interfaces for EtherType 0x888E (EAP over LAN)
-frames and forwards EAP packets between interfaces.
+[pyther/goeap_proxy](https://github.com/pyther/goeap_proxy/) is one of many EAP
+Proxies available. The proxy listens on both interfaces for EtherType 0x888E
+(EAP over LAN) frames and forwards EAP packets between interfaces.
 
 #### Build
 1. Go to [pyther/openwrt-feed](https://github.com/pyther/openwrt-feed)
@@ -107,8 +112,8 @@ frames and forwards EAP packets between interfaces.
 
         root@OpenWrt:~# cat /etc/config/goeap_proxy
         config goeap_proxy 'proxy'
-	            option wan 'eth1'
-	            option router 'eth2'
+	            option wan 'ont'
+	            option router 'rgw'
 3. Start goeap_proxy
 
         $ /etc/inti.d/goeap_proxy start
