@@ -148,7 +148,11 @@ Python Code to convert Serial Numbers to Hex
 '31:32:33:34:35:41:31:32:33:34:35:36'
 {% endhighlight %}
 
-*WARNING: The web interface will not accept the DUID/Clientid as being valid. This must be configured in the config file!*
+Convert Hex to proper format for Openwrt
+
+        root@openwrt:~# echo "00:02:00:00:0d:e9:30:30:31:45:34:36:2d:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx" | sed s/://g
+        000200000de93030314534362dxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+	...
 
 Interface Configuration
 {% highlight sh %}
@@ -157,7 +161,7 @@ config interface 'wan6'
 	option reqaddress 'try'
 	option reqprefix 'auto'
 	option peerdns '0'
-	option clientid '00:02:00:00:0d:e9:30:30:31:45:34:36:2d:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx'
+	option clientid '000200000de93030314534362dxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 	option ifname 'eth1.0' # tagged vlan0
 	list dns '2606:4700:4700::1111' #cloudflare dns
 	list dns '2606:4700:4700::1001' #cloudflare dns
