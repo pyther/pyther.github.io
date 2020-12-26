@@ -1,0 +1,4 @@
+$ bundle install
+$ bundle exec jekyll serve
+
+GitHub Pages Versions: https://pages.github.com/versions/
