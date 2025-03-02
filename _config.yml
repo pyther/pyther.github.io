@@ -38,12 +38,12 @@ defaults:
 author:
     name: "Matthew Gyurgyik"
     avatar: "/assets/images/bio-photo.jpg"
-    bio: Site Reliability Engineer, Linux Enthusiast, Network Explorer, Troublemaker
-    location: "Mountain View, CA"
+    bio: HPC System Administrator, Linux Enthusiast, Network Explorer, Problem Solver
+    location: "Pittsburgh, PA"
     links:
-        - label: "matthew@gyurgyik.io"
+        - label: "matthew@gyurgyik.com"
           icon: "far fa-fw fa-envelope"
-          url: "mailto:matthew@gyurgyik.io"
+          url: "mailto:matthew@gyurgyik.com"
         - label: "GitHub"
           icon: "fab fa-fw fa-github"
           url: "https://github.com/pyther"
@@ -66,6 +66,8 @@ remote_theme: "mmistakes/minimal-mistakes@4.19.2"
 plugins:
   - jekyll-feed
   - jekyll-include-cache
+
+minimal_mistakes_skin: "air" 
 
 # Exclude from processing.
 # The following items will not be processed, by default.

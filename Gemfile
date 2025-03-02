@@ -29,5 +29,7 @@ end
 gem "wdm", "~> 0.1.1", :install_if => Gem.win_platform?
 
 gem "minimal-mistakes-jekyll"
-gem "github-pages", 209, group: :jekyll_plugins
-
+gem 'github-pages', group: :jekyll_plugins
+gem 'csv'
+gem 'bigdecimal'
+gem 'webrick'
